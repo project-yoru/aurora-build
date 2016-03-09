@@ -3,7 +3,8 @@ source 'https://ruby.taobao.org'
 
 gem 'goliath'
 gem 'grape'
-# gem 'sidekiq'
+gem 'sidekiq'
+gem 'redis-namespace'
 
 group :development do
   gem 'byebug'

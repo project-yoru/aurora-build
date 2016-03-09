@@ -1,0 +1,9 @@
+---
+:pidfile: tmp/pids/sidekiq.pid
+:logfile: log/sidekiq.log
+development:
+  :concurrency: 1
+production:
+  :concurrency: 1
+:queues:
+  - [ building, 1 ]

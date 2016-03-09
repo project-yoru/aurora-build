@@ -1,1 +1,5 @@
+config/secrets.yml
+tmp/
+log/
+
 .byebug_history
