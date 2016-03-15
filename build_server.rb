@@ -1,10 +1,3 @@
-# TODO 
-# - authenticate request
-# - set auth for notification
-# - logging
-# - deployment
-# - errors catching
-
 require 'logger'
 logger = Logger.new STDOUT
 
