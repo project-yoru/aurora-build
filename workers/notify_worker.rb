@@ -1,4 +1,6 @@
-class BuildWorker
+require 'faraday'
+
+class NotifyWorker
   include Sidekiq::Worker
   include Sidekiq::Symbols
 
@@ -14,7 +16,7 @@ class BuildWorker
       req.headers['Content-Type'] = 'application/json'
       req.body = {
         event_type: event_type,
-        message: result
+        message: message
       }.to_json
     end
   end

@@ -3,9 +3,12 @@
 # - set auth for notification
 # - logging
 # - deployment
+# - errors catching
 
 require 'logger'
 logger = Logger.new STDOUT
+
+$root_dir = __dir__
 
 logger.info 'Loading initializers...'
 Dir["./config/initializers/*.rb"].each do |file|
@@ -43,7 +46,6 @@ class BuildAPI < Grape::API
     end
     post do
       BuildWorker.perform_async params[:distribution]
-      NotifyWorker.perform_async params[:distribution], 'building_progress', 'start'
     end
   end
 

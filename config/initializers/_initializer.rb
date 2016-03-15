@@ -3,9 +3,11 @@ logger = Logger.new STDOUT
 
 # 
 logger.info 'Loading dependencies...'
-require 'sidekiq'
 require 'goliath'
 require 'grape'
+
+require 'sidekiq'
+require 'sidekiq-symbols'
 
 case Goliath.env
 when :development
@@ -17,4 +19,4 @@ end
 logger.info 'Loading secrets...'
 require 'pathname'
 require 'yaml'
-$secrets = (YAML.load_file Pathname.new(__dir__).join('../secrets.yml'))[Goliath.env]
+$secrets = (YAML.load_file Pathname.new($root_dir).join('config/secrets.yml'))[Goliath.env]
