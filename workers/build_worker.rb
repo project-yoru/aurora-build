@@ -43,8 +43,7 @@ class BuildWorker
   private
 
   def notify distribution, result
-    logger.info "Notifying server on #{$secrets[:aurora_web_server][:url]}"
-    NotifyWorker.perform_async distribution, 'building_progress', result
+    NotifyWorker.perform_async distribution, 'building_progress', { progress: result }
   end
 
 end
