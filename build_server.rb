@@ -4,7 +4,8 @@ logger = Logger.new STDOUT
 $root_dir = __dir__
 
 logger.info 'Loading initializers...'
-Dir["./config/initializers/*.rb"].each do |file|
+# COMMENT sort is needed on some platform like Ubuntu to make sure that '_initializer.rb' got load first
+Dir["./config/initializers/*.rb"].sort.each do |file|
   logger.info "- #{file}"
   require file
 end
