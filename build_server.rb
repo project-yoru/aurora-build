@@ -1,54 +1,37 @@
-# TODO authenticate
-# TODO logging
-# TODO deployment
+# TODO 
+# - authenticate request
+# - set auth for notification
+# - logging
+# - deployment
 
 require 'logger'
 logger = Logger.new STDOUT
 
-# 
-logger.info 'Loading dependencies...'
-require 'sidekiq'
-require 'goliath'
-require 'grape'
-
-case Goliath.env
-when :development
-  require 'byebug'
-  require 'awesome_print'
+logger.info 'Loading initializers...'
+Dir["./config/initializers/*.rb"].each do |file|
+  logger.info "- #{file}"
+  require file
 end
 
-# 
-logger.info 'Loading secrets...'
-require 'pathname'
-require 'yaml'
-secrets = (YAML.load_file Pathname.new(__dir__).join('config/secrets.yml'))[Goliath.env]
-
-# 
-logger.info 'Configuring redis...'
-Sidekiq.configure_server do |config|
-  config.redis = { namespace: 'aurora-core-build-server', url: secrets[:redis][:url] }
-end
-Sidekiq.configure_client do |config|
-  config.redis = { namespace: 'aurora-core-build-server', url: secrets[:redis][:url] }
-end
-
-# 
 logger.info 'Loading workers...'
-require_relative 'workers/build_worker.rb'
+Dir["./workers/*.rb"].each do |file|
+  logger.info "- #{file}"
+  require file
+end
 
+# API by Grape
 class BuildAPI < Grape::API
 
   version 'v1', using: :path
   format :json
 
-  helpers do
-    def logger
-      BuildAPI.logger
-    end
-  end
+  # helpers do
+  #   def logger
+  #     BuildAPI.logger
+  #   end
+  # end
 
   resource :building_jobs do
-
     desc 'Create a building_job'
     params do
       requires :distribution, type: Hash do
@@ -59,13 +42,14 @@ class BuildAPI < Grape::API
       end
     end
     post do
-      # TODO authenticate
       BuildWorker.perform_async params[:distribution]
+      NotifyWorker.perform_async params[:distribution], 'building_progress', 'start'
     end
   end
 
 end
 
+# Web server by Goliath
 class BuildServer < Goliath::API
 
   def response(env)
