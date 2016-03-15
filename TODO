@@ -1,9 +1,12 @@
 server:
 - authenticate request
 - set auth for notification
-- logging
-- deployment
-- errors catching
+- proper logging
+- proper errors catching
 
 compressor:
 - dont contain the 'app_merged' folder
+
+sidekiq:
+- use the tag option
+- maybe enable sidekiq web ui

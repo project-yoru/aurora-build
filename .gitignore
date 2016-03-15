@@ -1,5 +1,22 @@
 config/secrets.yml
-tmp/
-log/
+
+/log/*
+!/log/.keep
+
+# TODO kind of dirty here
+/tmp/*
+!/tmp/.keep
+
+!/tmp/built_archives
+/tmp/built_archives/*
+!/tmp/built_archives/.keep
+
+!/tmp/pids
+/tmp/pids/*
+!/tmp/pids/.keep
+
+!/tmp/sockets
+/tmp/sockets/*
+!/tmp/sockets/.keep
 
 .byebug_history
