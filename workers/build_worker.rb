@@ -1,5 +1,5 @@
 require 'open3'
-require 'SecureRandom'
+require 'securerandom'
 
 class BuildWorker
   include Sidekiq::Worker
