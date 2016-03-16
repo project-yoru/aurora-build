@@ -15,4 +15,4 @@ bundle
 sidekiqctl stop ./tmp/pids/sidekiq.pid
 
 # start sidekiq
-bundle exec sidekiq -C ./config/sidekiq.yml -v -r ./build_server.rb -g aurora-core-build-server -d
+bundle exec sidekiq -C ./config/sidekiq.yml -v -r ./build_server.rb -g aurora-core-build-server -e production -d
