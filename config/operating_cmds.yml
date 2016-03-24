@@ -1,0 +1,27 @@
+# TODO use env var for paths
+
+:development:
+  :spawn_builder: |-
+    cp -r /Users/nami/workspace/project-yoru/aurora-core-builder/. %{builder_path}
+  :build: |-
+    source $NVM_DIR/nvm.sh &&
+    nvm use node &&
+    source $HOME/.rvm/scripts/rvm &&
+    rvm use default &&
+    cd %{builder_path} &&
+    gulp build --appContentRepoPath %{app_content_repo_path}
+  :compress: |-
+    cd %{builder_path}app_merged/dist &&
+    zip -r %{archive_file_path} ./*
+
+:production:
+  :spawn_builder: |-
+    cp -r /home/deployer/deploy/aurora-core-builder/. %{builder_path}
+  :build: |-
+    source $HOME/.rvm/scripts/rvm &&
+    rvm use default &&
+    cd %{builder_path} &&
+    gulp build --appContentRepoPath %{app_content_repo_path}
+  :compress: |-
+    cd %{builder_path}app_merged/dist &&
+    zip -r -9 %{archive_file_path} ./*

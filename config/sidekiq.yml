@@ -6,5 +6,5 @@ development:
 production:
   :concurrency: 8
 :queues:
-  - [ building, 1 ]
-  - [ notifying, 8 ]
+  - [ building, 4 ]
+  - [ notifying, 4 ]
