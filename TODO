@@ -1,12 +1,9 @@
 server:
 - authenticate request
 - set auth for notification
-- proper logging
-- proper errors catching
 - bugsnag
-
-compressor:
-- dont contain the 'app_merged' folder
+- should hide sensitive error message for user
 
 sidekiq:
 - maybe enable sidekiq web ui
+

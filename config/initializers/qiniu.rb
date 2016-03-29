@@ -3,9 +3,9 @@ require 'qiniu'
 access_key = $secrets[:cdn][:qiniu][:access_key]
 secret_key = $secrets[:cdn][:qiniu][:secret_key]
 up_host = case Goliath.env
-          when 'development'
+          when :development
             'http://up.qiniu.com'
-          when 'production'
+          when :production
             'http://up.qiniug.com'
           end
 
