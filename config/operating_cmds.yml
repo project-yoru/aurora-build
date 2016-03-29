@@ -9,10 +9,6 @@
 
 :development:
   <<: *default
-  :pull: |-
-    cd %{building_workspace_path} &&
-    git clone --depth=1 https://github.com/%{github_repo_path} ./app_content &&
-    mv ./app_content/* ./app/
   :build: |-
     bash -lc "
     source $NVM_DIR/nvm.sh &&
@@ -27,15 +23,12 @@
 
 :production:
   <<: *default
-  :pull: |-
-    cd %{building_workspace_path} &&
-    git clone --depth=1 https://github.com/%{github_repo_path} ./app_content &&
-    mv ./app_content/* ./app/
   :build: |-
+    bash -lc "
     source $HOME/.rvm/scripts/rvm &&
     rvm use default &&
     cd %{building_workspace_path} &&
-    gulp build
+    gulp build"
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*
