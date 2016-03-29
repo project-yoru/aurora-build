@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# RUN FROM ./, instead of ./scripts/
+# TODO make paths relative to the file instead of the pwd path could solve this issue
+
 # update code
 # TODO update secrets
 git pull
@@ -15,4 +18,4 @@ kill -9 `cat ./tmp/pids/goliath.pid`
 sidekiqctl stop ./tmp/pids/sidekiq.pid
 
 # start server
-source ./start_server.sh
+source ./scripts/start_server.sh
