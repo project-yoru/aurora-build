@@ -3,10 +3,10 @@ server:
 - set auth for notification
 - proper logging
 - proper errors catching
+- bugsnag
 
 compressor:
 - dont contain the 'app_merged' folder
 
 sidekiq:
-- use the tag option
 - maybe enable sidekiq web ui

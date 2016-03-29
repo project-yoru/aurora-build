@@ -1,3 +1,6 @@
+# TODO handle notifying and logging more beautifully
+# TODO handle git clone progress
+
 require 'open3'
 require 'securerandom'
 
@@ -8,77 +11,71 @@ class BuildWorker
   sidekiq_options queue: :building, retry: false
 
   def perform distribution
-    logger.info "Performing BuildWorker for distribution ##{distribution[:id]} ..."
+    @distribution = distribution
 
-    # spawn a new builder
-    builder_path = Pathname.new($root_dir).join("tmp/builders/#{self.jid}-#{SecureRandom.uuid}/")
-    FileUtils.mkpath builder_path.dirname
-    spawn_builder_cmd = $operating_cmds[:spawn_builder] % { builder_path: builder_path }
-    logger.info "Spawning a new builder with cmd: #{spawn_builder_cmd}"
-    # TODO refactor, make shell cmd exec a method
-    stdout, stderr, status = Open3.capture3 spawn_builder_cmd
+    notify 'start_building'
+    logger.info "Performing BuildWorker for distribution ##{@distribution[:id]} ..."
 
-    unless status.exitstatus == 0
-      logger.info "Spawning #{status.exitstatus}, assume failed..."
-      logger.info "Spawning exited with stderr:"
-      # TODO format
-      logger.info stderr
-      # TODO get and send failed message
-      notify distribution, 'failure_occured'
-      # TODO throw
-      return
-    end
+    notify 'spawning building workspace'
+    @building_workspace_path = spawn_building_workspace
 
-    logger.info "Spawning exited with state 0, assume succeed..."
+    notify 'pulling'
+    pull_app_content_repo @distribution[:github_repo_path]
 
-    notify distribution, 'started_pulling'
-    # TODO separate pulling code
+    notify 'running building scripts'
+    build
 
+    notify 'compressing'
+    archive_file_path = compress
+
+    notify 'uploading'
+    uploaded_archive_url = upload archive_file_path
+
+    notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
+
+    # cleanup builder and built_archive
+    # TODO cleanup also after error occured
+    FileUtils.rm_rf @building_workspace_path
+    FileUtils.rm_f archive_file_path
+  rescue => e
+    error_occur! e
+  end
+
+  private
+
+  def spawn_building_workspace
+    building_workspace_path = Pathname.new($root_dir).join("tmp/building_workspaces/#{self.jid}-#{SecureRandom.uuid}/")
+    FileUtils.cp_r Pathname.new($root_dir).join('vendor/aurora-core-structure'), building_workspace_path
+    return building_workspace_path
+  end
+
+  def pull_app_content_repo github_repo_path
+    pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, github_repo_path: github_repo_path }
+    exec_cmd pulling_cmd
+  end
+
+  def build
     # TODO separate gulp scripts
-    # TODO logging
-    notify distribution, 'started_building'
-    logger.info "Running gulp script..."
-    building_cmd = $operating_cmds[:build] % { builder_path: builder_path, app_content_repo_path: distribution[:github_repo_path] }
-    logger.info "Building cmd: #{building_cmd}"
-    stdout, stderr, status = Open3.capture3 building_cmd
+    # TODO handle stderr and stuff
+    logger.info 'Running gulp script...'
+    building_cmd = $operating_cmds[:build] % { building_workspace_path: @building_workspace_path }
+    exec_cmd building_cmd
+  end
 
-    unless status.exitstatus == 0
-      logger.info "Builder exited with state #{status.exitstatus}, assume failed..."
-      logger.info "Builder exited with stderr:"
-      # TODO format
-      logger.info stderr
-
-      # TODO get and send failed message
-      notify distribution, 'failure_occured'
-
-      # TODO throw
-      return
-    end
-
-    logger.info "Builder exited with state 0, assume succeed..."
-
-    notify distribution, 'started_uploading' # COMMENT actually that's compressing & uploading
-
-    # compress archive
+  def compress
     logger.info 'Start compressing...'
-    archive_file_path = Pathname.new($root_dir).join("tmp/built_archives/#{distribution[:id]}-#{SecureRandom.uuid}.zip") # TODO should be related to project name, distribution platform, version, etc...
+
+    archive_file_path = Pathname.new($root_dir).join("tmp/built_archives/#{@distribution[:id]}-#{SecureRandom.uuid}.zip") # TODO should be related to project name, distribution platform, version, etc...
     FileUtils.mkpath archive_file_path.dirname
-    compressing_cmd = $operating_cmds[:compress] % { builder_path: builder_path, archive_file_path: archive_file_path }
-    stdout, stderr, status = Open3.capture3 compressing_cmd
+    compressing_cmd = $operating_cmds[:compress] % { building_workspace_path: @building_workspace_path, archive_file_path: archive_file_path }
+    exec_cmd compressing_cmd
 
-    unless status.exitstatus == 0
-      logger.info "Compressing exited with state #{status.exitstatus}, assume failed..."
-      logger.info "Compressing exited with stderr:"
-      # TODO format
-      logger.info stderr
-      # TODO get and send failed message
-      notify distribution, 'failure_occured'
-      # TODO throw
-      return
-    end
+    return archive_file_path
+  end
 
-    # upload
-    logger.info 'Compresser exited with state 0, assume succeed, start uploading...'
+  def upload archive_file_path
+    logger.info "Start uploading file: #{archive_file_path}"
+
     response_code, response_result, response_headers = Qiniu::Storage.upload_with_token_2(
       Qiniu::Auth.generate_uptoken( Qiniu::Auth::PutPolicy.new $secrets[:cdn][:qiniu][:bucket] ),
       archive_file_path
@@ -88,25 +85,48 @@ class BuildWorker
       logger.info "Uploader responsed without 200, assume failed..."
       logger.info "Response headers: #{response_headers}"
       # TODO get and send failed message
-      notify distribution, 'failure_occured'
-      # TODO throw
-      return      
+      error_occur! 'uploading failed'
     end
 
     uploaded_archive_url = URI::HTTP.build host: $secrets[:cdn][:qiniu][:domain], path: "/#{response_result['key']}"
-
-    notify distribution, 'succeeded', { uploaded_archive_url: uploaded_archive_url }
-    logger.info 'Uploading succeeded!'
-
-    # cleanup builder and built_archive
-    FileUtils.rm_rf builder_path
-    FileUtils.rm_f archive_file_path
+    logger.info "Uploaded succeeded to: #{uploaded_archive_url}"
+    return uploaded_archive_url
   end
 
-  private
+  def exec_cmd cmd
+    logger.info "Executing cmd: #{cmd}"
+    stdout, stderr, status = Open3.capture3 cmd
 
-  def notify distribution, progress, extra_message = {}
-    NotifyWorker.perform_async distribution, 'building_progress', { progress: progress }.merge(extra_message)
+    if status.exitstatus != 0
+      logger.info "Executing failed with exitstatus: #{status.exitstatus}"
+      logger.info "Executing exited with stderr:"
+      # TODO format
+      logger.info stderr
+      # TODO get and send failed message, try get the last line of formated stderr
+      error_occur! stderr.lines.last
+      return
+    end
+
+    logger.info 'Executing exited with status 0, assuming succeed...'
+  end
+
+  def error_occur! error_message
+    # TODO get and send failed message
+    notify 'error_occur', { progress_message: error_message }
+
+    raise error_message
+  end
+
+  def notify progress, extra_message = {}
+    # TODO timestamp
+
+    if %w(start_building error_occur succeed).include? progress
+      # that's a major progress update
+      NotifyWorker.perform_async @distribution, 'building_progress', { progress: progress }.merge(extra_message)
+    else
+      # that's a minor progress update
+      NotifyWorker.perform_async @distribution, 'building_progress', { progress: 'minor_update' }.merge({progress_message: progress}).merge(extra_message)
+    end
   end
 
 end

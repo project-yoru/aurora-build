@@ -19,8 +19,8 @@ config/secrets.yml
 /tmp/sockets/*
 !/tmp/sockets/.keep
 
-!/tmp/builders
-/tmp/builders/*
-!/tmp/builders/.keep
+!/tmp/building_workspaces
+/tmp/building_workspaces/*
+!/tmp/building_workspaces/.keep
 
 .byebug_history

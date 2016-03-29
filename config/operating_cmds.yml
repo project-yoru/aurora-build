@@ -1,27 +1,41 @@
 # TODO use env var for paths
+# TODO use default block
+
+:default: &default
+  :pull: |-
+    cd %{building_workspace_path} &&
+    git clone --depth=1 https://github.com/%{github_repo_path} ./app_content &&
+    mv ./app_content/* ./app/
 
 :development:
-  :spawn_builder: |-
-    cp -r /Users/nami/workspace/project-yoru/aurora-core-builder/. %{builder_path}
+  <<: *default
+  :pull: |-
+    cd %{building_workspace_path} &&
+    git clone --depth=1 https://github.com/%{github_repo_path} ./app_content &&
+    mv ./app_content/* ./app/
   :build: |-
+    bash -lc "
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
     source $HOME/.rvm/scripts/rvm &&
     rvm use default &&
-    cd %{builder_path} &&
-    gulp build --appContentRepoPath %{app_content_repo_path}
+    cd %{building_workspace_path} &&
+    gulp build"
   :compress: |-
-    cd %{builder_path}app_merged/dist &&
+    cd %{building_workspace_path}/dist &&
     zip -r %{archive_file_path} ./*
 
 :production:
-  :spawn_builder: |-
-    cp -r /home/deployer/deploy/aurora-core-builder/. %{builder_path}
+  <<: *default
+  :pull: |-
+    cd %{building_workspace_path} &&
+    git clone --depth=1 https://github.com/%{github_repo_path} ./app_content &&
+    mv ./app_content/* ./app/
   :build: |-
     source $HOME/.rvm/scripts/rvm &&
     rvm use default &&
-    cd %{builder_path} &&
-    gulp build --appContentRepoPath %{app_content_repo_path}
+    cd %{building_workspace_path} &&
+    gulp build
   :compress: |-
-    cd %{builder_path}app_merged/dist &&
+    cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*
