@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 # RUN FROM ./, instead of ./scripts/
-# TODO make paths relative to the file instead of the pwd path could solve this issue
 
 # update code
 # TODO update secrets
@@ -10,6 +9,7 @@ git submodule update --remote
 
 # update deps
 bundle
+cd ./vendor/aurora-core-structure && bundle && npm install && bower install && cd ../../
 
 # stop goliath
 kill -9 `cat ./tmp/pids/goliath.pid`
