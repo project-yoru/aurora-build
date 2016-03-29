@@ -23,4 +23,3 @@ $secrets = (YAML.load_file Pathname.new($root_dir).join('config/secrets.yml'))[G
 
 logger.info 'Loading operating cmds...'
 $operating_cmds = (YAML.load_file Pathname.new($root_dir).join('config/operating_cmds.yml'))[Goliath.env]
-
