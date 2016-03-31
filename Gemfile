@@ -5,7 +5,7 @@ gem 'goliath'
 gem 'grape'
 gem 'sidekiq'
 gem 'sidekiq-symbols'
-gem 'redis-namespace'
+# gem 'redis-namespace'
 gem 'faraday'
 gem 'qiniu', '~> 6.2.1'
 
