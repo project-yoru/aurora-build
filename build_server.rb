@@ -22,13 +22,14 @@ class BuildAPI < Grape::API
   version 'v1', using: :path
   format :json
 
-  # helpers do
-  #   def logger
-  #     BuildAPI.logger
-  #   end
-  # end
+  helpers do
+    def logger
+      BuildAPI.logger
+    end
+  end
 
   resource :building_jobs do
+
     desc 'Create a building_job'
     params do
       requires :distribution, type: Hash do
@@ -39,8 +40,38 @@ class BuildAPI < Grape::API
       end
     end
     post do
-      BuildWorker.perform_async params[:distribution]
+      logger.info "creating building_job for distribution ##{params[:distribution][:id]}"
+      {
+        job_id: ( BuildWorker.perform_async params[:distribution] )
+      }
     end
+
+    desc 'Stop a building_job'
+    params do
+      requires :job_id, type: String
+    end
+    delete ':job_id' do
+      logger.info "shutting building_job for job ##{params[:job_id]}"
+
+      # get and stop jobs
+      # TODO seems this can only stop in-queue-and-not-running jobs
+      # TODO figure some workaround
+      # TODO also stop all notifying job related to this distribution
+      if job = ( Sidekiq::Queue.new('building').find_job params[:job_id] )
+        job.delete
+      end
+
+      # clean up tmp files
+      # TODO make following a shared lib
+      FileUtils.rm_rf Pathname.new($root_dir).join("tmp/building_workspaces/#{params[:job_id]}/")
+      FileUtils.rm_f Pathname.new($root_dir).join("tmp/built_archives/#{params[:job_id]}.zip") 
+
+      # TODO proper response
+      {
+        message: "job #{params[:job_id]} deleted"
+      }
+    end
+
   end
 
 end

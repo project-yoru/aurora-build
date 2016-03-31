@@ -11,7 +11,7 @@ class NotifyWorker
     logger.info "event_type #{event_type}, message: #{event_message} ..."
 
     conn = Faraday.new url: $secrets[:aurora_web_server][:url]
-    response = conn.post do |req|
+    response = conn.patch do |req|
       req.url "/distributions/#{distribution[:id]}/notify"
       req.headers['Content-Type'] = 'application/json'
       req.body = {

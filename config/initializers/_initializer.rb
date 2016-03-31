@@ -5,8 +5,8 @@ logger = Logger.new STDOUT
 logger.info 'Loading dependencies...'
 require 'goliath'
 require 'grape'
-
 require 'sidekiq'
+require 'sidekiq/api'
 require 'sidekiq-symbols'
 
 case Goliath.env

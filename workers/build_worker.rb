@@ -11,10 +11,11 @@ class BuildWorker
   sidekiq_options queue: :building, retry: false
 
   def perform distribution
+    logger.info "Performing BuildWorker for distribution ##{distribution[:id]} ..."
+
     @distribution = distribution
 
     notify 'start_building'
-    logger.info "Performing BuildWorker for distribution ##{@distribution[:id]} ..."
 
     notify 'spawning building workspace'
     @building_workspace_path = spawn_building_workspace
@@ -32,19 +33,19 @@ class BuildWorker
     uploaded_archive_url = upload archive_file_path
 
     notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
-
-    # cleanup builder and built_archive
-    # TODO cleanup also after error occured
-    FileUtils.rm_rf @building_workspace_path
-    FileUtils.rm_f archive_file_path
   rescue => e
     error_occur! e
+  ensure
+    # cleanup
+    FileUtils.rm_rf @building_workspace_path
+    FileUtils.rm_f archive_file_path
   end
 
   private
 
   def spawn_building_workspace
-    building_workspace_path = Pathname.new($root_dir).join("tmp/building_workspaces/#{self.jid}-#{SecureRandom.uuid}/")
+    building_workspace_path = Pathname.new($root_dir).join("tmp/building_workspaces/#{self.jid}/")
+    FileUtils.rm_rf building_workspace_path if Dir.exists? building_workspace_path
     FileUtils.cp_r Pathname.new($root_dir).join('vendor/aurora-core-structure'), building_workspace_path
     return building_workspace_path
   end
@@ -65,7 +66,7 @@ class BuildWorker
   def compress
     logger.info 'Start compressing...'
 
-    archive_file_path = Pathname.new($root_dir).join("tmp/built_archives/#{@distribution[:id]}-#{SecureRandom.uuid}.zip") # TODO should be related to project name, distribution platform, version, etc...
+    archive_file_path = Pathname.new($root_dir).join("tmp/built_archives/#{jid}.zip") # TODO should be related to project name, distribution platform, version, etc...
     FileUtils.mkpath archive_file_path.dirname
     compressing_cmd = $operating_cmds[:compress] % { building_workspace_path: @building_workspace_path, archive_file_path: archive_file_path }
     exec_cmd compressing_cmd
@@ -118,15 +119,28 @@ class BuildWorker
   end
 
   def notify progress, extra_message = {}
-    # TODO timestamp
+    default_message = {
+      job_id: jid,
+      sent_at: Time.now.to_i
+    }
+    message = {}
 
-    if %w(start_building error_occur succeed).include? progress
-      # that's a major progress update
-      NotifyWorker.perform_async @distribution, 'building_progress', { progress: progress }.merge(extra_message)
+    case progress
+    when 'start_building', 'error_occur', 'succeed'
+      event_name = 'building_progress'
+      message = {
+        progress: progress
+      }
     else
       # that's a minor progress update
-      NotifyWorker.perform_async @distribution, 'building_progress', { progress: 'minor_update' }.merge({progress_message: progress}).merge(extra_message)
+      event_name = 'building_progress'
+      message = {
+        progress: 'minor_update',
+        progress_message: progress
+      }
     end
+
+    NotifyWorker.perform_async @distribution, event_name, default_message.merge(message).merge(extra_message)
   end
 
 end
