@@ -98,9 +98,12 @@ class BuildWorker
     logger.info "Executing cmd: #{cmd}"
     stdout, stderr, status = Open3.capture3 cmd
 
+    logger.info "STDOUT:"
+    logger.info stdout # TODO format
+
     if status.exitstatus != 0
       logger.info "Executing failed with exitstatus: #{status.exitstatus}"
-      logger.info "Executing exited with stderr:"
+      logger.info "STDERR:"
       # TODO format
       logger.info stderr
       # TODO get and send failed message, try get the last line of formated stderr
