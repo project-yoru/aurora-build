@@ -37,8 +37,8 @@ class BuildWorker
     error_occur! e
   ensure
     # cleanup
-    FileUtils.rm_rf @building_workspace_path
-    FileUtils.rm_f archive_file_path
+    FileUtils.rm_rf @building_workspace_path unless @building_workspace_path.blank?
+    FileUtils.rm_f archive_file_path unless archive_file_path.blank?
   end
 
   private
