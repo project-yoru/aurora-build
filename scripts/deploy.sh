@@ -11,11 +11,8 @@ git submodule update --remote
 bundle
 cd ./vendor/aurora-core-structure && bundle && npm install && bower install && cd ../../
 
-# stop goliath
-kill -9 `cat ./tmp/pids/goliath.pid`
-
-# stop sidekiq
-sidekiqctl stop ./tmp/pids/sidekiq.pid
+# stop server
+source ./scripts/stop_server.sh
 
 # start server
 source ./scripts/start_server.sh
