@@ -13,8 +13,6 @@
     bash -lc "
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
-    source $HOME/.rvm/scripts/rvm &&
-    rvm use default &&
     cd %{building_workspace_path} &&
     gulp build"
   :compress: |-
@@ -24,9 +22,8 @@
 :production:
   <<: *default
   :build: |-
-    bash -lc "
     cd %{building_workspace_path} &&
-    gulp build"
+    gulp build
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*
