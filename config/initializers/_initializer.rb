@@ -3,7 +3,7 @@ logger = Logger.new STDOUT
 
 #
 logger.info 'Loading dependencies...'
-require 'bundler'
+# require 'bundler'
 require 'goliath'
 require 'grape'
 require 'sidekiq'
