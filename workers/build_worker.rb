@@ -98,8 +98,8 @@ class BuildWorker
     logger.info "Executing cmd: #{cmd}"
     stdout, stderr, status = Open3.capture3 cmd
 
-    logger.info "STDOUT:"
-    logger.info stdout # TODO format
+    # logger.info "STDOUT:"
+    # logger.info stdout # TODO format
 
     if status.exitstatus != 0
       logger.info "Executing failed with exitstatus: #{status.exitstatus}"
