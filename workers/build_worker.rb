@@ -96,7 +96,9 @@ class BuildWorker
 
   def exec_cmd cmd
     logger.info "Executing cmd: #{cmd}"
-    stdout, stderr, status = Open3.capture3 cmd
+    Bundler.with_clean_env do
+      stdout, stderr, status = Open3.capture3 cmd
+    end
 
     logger.info "STDOUT:"
     logger.info stdout # TODO format

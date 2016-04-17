@@ -1,8 +1,9 @@
 require 'logger'
 logger = Logger.new STDOUT
 
-# 
+#
 logger.info 'Loading dependencies...'
+require 'bundler'
 require 'goliath'
 require 'grape'
 require 'sidekiq'
@@ -15,7 +16,7 @@ when :development
   require 'awesome_print'
 end
 
-# 
+#
 logger.info 'Loading secrets...'
 require 'pathname'
 require 'yaml'
