@@ -25,7 +25,6 @@
   <<: *default
   :build: |-
     bash -lc "
-    source $HOME/.rvm/scripts/rvm &&
     cd %{building_workspace_path} &&
     gulp build"
   :compress: |-
