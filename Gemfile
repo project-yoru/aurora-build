@@ -1,13 +1,14 @@
-source 'https://rubygems.org'
-# source 'https://ruby.taobao.org'
+# source 'https://rubygems.org'
+source 'https://ruby.taobao.org'
 
-gem 'goliath'
-gem 'grape'
-gem 'sidekiq'
-gem 'sidekiq-symbols'
-gem 'redis-namespace'
+gem 'trollop'
+# gem 'sidekiq'
+# gem 'sidekiq-symbols'
+# gem 'redis'
+# gem 'redis-namespace'
 gem 'faraday'
-gem 'qiniu', '~> 6.2.1'
+# gem 'qiniu', '~> 6.2.1'
+# gem 'celluloid'
 
 group :development do
   gem 'byebug'

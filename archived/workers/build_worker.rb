@@ -43,25 +43,25 @@ class BuildWorker
 
   private
 
-  def spawn_building_workspace
-    building_workspace_path = Pathname.new($root_dir).join("tmp/building_workspaces/#{self.jid}/")
-    FileUtils.rm_rf building_workspace_path if Dir.exists? building_workspace_path
-    FileUtils.cp_r Pathname.new($root_dir).join('vendor/aurora-core-structure'), building_workspace_path
-    return building_workspace_path
-  end
+  # def spawn_building_workspace
+  #   building_workspace_path = Pathname.new($root_dir).join("tmp/building_workspaces/#{self.jid}/")
+  #   FileUtils.rm_rf building_workspace_path if Dir.exists? building_workspace_path
+  #   FileUtils.cp_r Pathname.new($root_dir).join('vendor/aurora-core-structure'), building_workspace_path
+  #   return building_workspace_path
+  # end
 
-  def pull_app_content_repo github_repo_path
-    pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, github_repo_path: github_repo_path }
-    exec_cmd pulling_cmd
-  end
+  # def pull_app_content_repo github_repo_path
+  #   pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, github_repo_path: github_repo_path }
+  #   exec_cmd pulling_cmd
+  # end
 
-  def build
-    # TODO separate gulp scripts
-    # TODO handle stderr and stuff
-    logger.info 'Running gulp script...'
-    building_cmd = $operating_cmds[:build] % { building_workspace_path: @building_workspace_path }
-    exec_cmd building_cmd
-  end
+  # def build
+  #   # TODO separate gulp scripts
+  #   # TODO handle stderr and stuff
+  #   logger.info 'Running gulp script...'
+  #   building_cmd = $operating_cmds[:build] % { building_workspace_path: @building_workspace_path }
+  #   exec_cmd building_cmd
+  # end
 
   def compress
     logger.info 'Start compressing...'
@@ -94,56 +94,56 @@ class BuildWorker
     return uploaded_archive_url
   end
 
-  def exec_cmd cmd
-    logger.info "Executing cmd: #{cmd}"
-    stdout, stderr, status = Open3.capture3 cmd
+  # def exec_cmd cmd
+  #   logger.info "Executing cmd: #{cmd}"
+  #   stdout, stderr, status = Open3.capture3 cmd
 
-    # logger.info "STDOUT:"
-    # logger.info stdout # TODO format
+  #   # logger.info "STDOUT:"
+  #   # logger.info stdout # TODO format
 
-    if status.exitstatus != 0
-      logger.info "Executing failed with exitstatus: #{status.exitstatus}"
-      logger.info "STDERR:"
-      # TODO format
-      logger.info stderr
-      # TODO get and send failed message, try get the last line of formated stderr
-      error_occur! stderr.lines.last
-      return
-    end
+  #   if status.exitstatus != 0
+  #     logger.info "Executing failed with exitstatus: #{status.exitstatus}"
+  #     logger.info "STDERR:"
+  #     # TODO format
+  #     logger.info stderr
+  #     # TODO get and send failed message, try get the last line of formated stderr
+  #     error_occur! stderr.lines.last
+  #     return
+  #   end
 
-    logger.info 'Executing exited with status 0, assuming succeed...'
-  end
+  #   logger.info 'Executing exited with status 0, assuming succeed...'
+  # end
 
-  def error_occur! error_message
-    # TODO get and send failed message
-    notify 'error_occur', { progress_message: error_message }
+  # def error_occur! error_message
+  #   # TODO get and send failed message
+  #   notify 'error_occur', { progress_message: error_message }
 
-    raise error_message
-  end
+  #   raise error_message
+  # end
 
-  def notify progress, extra_message = {}
-    default_message = {
-      job_id: jid,
-      sent_at: Time.now.to_i
-    }
-    message = {}
+  # def notify progress, extra_message = {}
+  #   default_message = {
+  #     job_id: jid,
+  #     sent_at: Time.now.to_i
+  #   }
+  #   message = {}
 
-    case progress
-    when 'start_building', 'error_occur', 'succeed'
-      event_name = 'building_progress'
-      message = {
-        progress: progress
-      }
-    else
-      # that's a minor progress update
-      event_name = 'building_progress'
-      message = {
-        progress: 'minor_update',
-        progress_message: progress
-      }
-    end
+  #   case progress
+  #   when 'start_building', 'error_occur', 'succeed'
+  #     event_name = 'building_progress'
+  #     message = {
+  #       progress: progress
+  #     }
+  #   else
+  #     # that's a minor progress update
+  #     event_name = 'building_progress'
+  #     message = {
+  #       progress: 'minor_update',
+  #       progress_message: progress
+  #     }
+  #   end
 
-    NotifyWorker.perform_async @distribution, event_name, default_message.merge(message).merge(extra_message)
-  end
+  #   NotifyWorker.perform_async @distribution, event_name, default_message.merge(message).merge(extra_message)
+  # end
 
 end

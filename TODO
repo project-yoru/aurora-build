@@ -1,11 +1,9 @@
 server:
+- rename to aurora-builder
+- halt running builder thread
 - SECURITY authenticate request
 - SECURITY set auth for notification
 - SA bugsnag
 - should hide sensitive error message for user
 - IMPORTANT check if is a valid aurora app repo
 - SA proper logging for both goliath and grape
-- IMPORTANT STABILITY properly kill in-queue, running, and related notify jobs
-
-sidekiq:
-- maybe enable sidekiq web ui

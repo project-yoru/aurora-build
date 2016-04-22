@@ -3,24 +3,9 @@ config/secrets.yml
 /log/*
 !/log/.keep
 
-# TODO kind of dirty here
 /tmp/*
 !/tmp/.keep
 
-!/tmp/built_archives
-/tmp/built_archives/*
-!/tmp/built_archives/.keep
-
-!/tmp/pids
-/tmp/pids/*
-!/tmp/pids/.keep
-
-!/tmp/sockets
-/tmp/sockets/*
-!/tmp/sockets/.keep
-
-!/tmp/building_workspaces
-/tmp/building_workspaces/*
-!/tmp/building_workspaces/.keep
-
 .byebug_history
+
+.DS_Store
