@@ -5,9 +5,9 @@
 require 'trollop'
 require 'logger'
 require 'pathname'
+require 'fileutils'
 
 module AuroraBuilder
-  $logger = Logger.new "| #{$env.to_s}.log"
   $root_path = Pathname.new __dir__
 
   # parse options
@@ -20,6 +20,11 @@ module AuroraBuilder
     when :development, :dev then :development
     when :production, :prod then :production
     end
+
+  # logger
+  logfile_path = $root_path.join "log/#{$env.to_s}.log"
+  FileUtils.touch logfile_path
+  $logger = Logger.new File.open(logfile_path, File::WRONLY | File::APPEND)
 
   $logger.info "Starting aurora builder server in #{$env}..."
 
