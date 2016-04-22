@@ -7,7 +7,7 @@ require 'logger'
 require 'pathname'
 
 module AuroraBuilder
-  $logger = Logger.new STDOUT
+  $logger = Logger.new "| #{$env.to_s}.log"
   $root_path = Pathname.new __dir__
 
   # parse options
