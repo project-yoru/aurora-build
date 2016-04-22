@@ -25,8 +25,10 @@
 :production:
   <<: *default
   :build: |-
+    bash -lc "
+    source $HOME/.rvm/scripts/rvm &&
     cd %{building_workspace_path} &&
-    gulp build
+    gulp build"
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*

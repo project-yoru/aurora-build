@@ -2,6 +2,9 @@
 
 # RUN FROM ./, instead of ./scripts/
 
+# rvm
+source $HOME/.rvm/scripts/rvm
+
 # update code
 # TODO update secrets
 git pull
@@ -9,7 +12,7 @@ git submodule update --remote
 
 # update deps
 bundle
-cd ./vendor/aurora-core-structure && npm install && bower install && cd ../../
+cd ./vendor/aurora-core-structure && bundle && npm install && bower install && cd ../../
 
 # stop server
 source ./scripts/stop_server.sh
