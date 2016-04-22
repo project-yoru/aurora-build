@@ -74,7 +74,7 @@ module AuroraBuilder
     end
 
     def upload archive_file_path
-      notify "Start uploading file: #{archive_file_path}"
+      notify "Start uploading file..."
 
       response_code, response_result, response_headers = Qiniu::Storage.upload_with_token_2(
         Qiniu::Auth.generate_uptoken( Qiniu::Auth::PutPolicy.new $secrets[:cdn][:qiniu][:bucket] ),
