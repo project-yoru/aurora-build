@@ -4,7 +4,7 @@
 :default: &default
   :pull: |-
     cd %{building_workspace_path} &&
-    git clone --depth=1 {git_repo_path} ./app_content &&
+    git clone --depth=1 %{git_repo_path} ./app_content &&
     mv ./app_content/config ./app/ &&
     mv ./app_content/story ./app/ &&
     mv ./app_content/resources ./app/ &&
