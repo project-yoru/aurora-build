@@ -11,8 +11,7 @@ git pull
 git submodule update --remote
 
 # update deps
-bundle
-cd ./vendor/aurora-core-structure && bundle && npm install && bower install && cd ../../
+bundle && cd ./vendor/aurora-core-structure && bundle && npm install && bower install && cd ../../
 
 # stop server
 source ./scripts/stop_server.sh

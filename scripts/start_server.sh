@@ -3,4 +3,4 @@
 # rvm
 
 # start server
-ruby ./server.rb -e production
+ruby ./server.rb -e production &
