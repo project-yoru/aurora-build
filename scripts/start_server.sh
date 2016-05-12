@@ -3,4 +3,4 @@
 # rvm
 
 # start server
-ruby ./server.rb -e production -d
+nohup ruby ./server.rb -e production &> /dev/null &
