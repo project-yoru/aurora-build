@@ -13,6 +13,7 @@ module AuroraBuilder
   # parse options
   $options = Trollop::options do
     opt :env, 'environment, dev/development/prod/production', type: :string, default: 'dev'
+    opt :d, 'daemonize', type: :boolean, default: false
   end
 
   $env =
@@ -20,6 +21,10 @@ module AuroraBuilder
     when :development, :dev then :development
     when :production, :prod then :production
     end
+
+  if $options[:d]
+    Process.daemon
+  end
 
   # logger
   logfile_path = $root_path.join "log/#{$env.to_s}.log"
@@ -43,14 +48,14 @@ module AuroraBuilder
     require file
   end
 
-  # 
+  #
   $logger.info 'Clearing and re-building tmps'
   FileUtils.rm_rf $root_path.join 'tmp/building_workspaces'
   FileUtils.rm_rf $root_path.join 'tmp/built_archives'
   FileUtils.mkdir_p $root_path.join 'tmp/building_workspaces'
   FileUtils.mkdir_p $root_path.join 'tmp/built_archives'
 
-  # 
+  #
   $logger.info 'Starting fetcher, manager, builders...'
 
   $fetcher = AuroraBuilder::Fetcher.new
