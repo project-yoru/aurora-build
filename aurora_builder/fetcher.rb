@@ -12,6 +12,7 @@ module AuroraBuilder
 
     def thread
       Thread.new do
+        log 'Fetcher thread started'
         loop do
           if job = fetch_job
             log "fetched job: #{job}"

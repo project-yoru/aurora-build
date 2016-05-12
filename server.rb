@@ -23,8 +23,7 @@ module AuroraBuilder
 
   # logger
   logfile_path = $root_path.join "log/#{$env.to_s}.log"
-  FileUtils.touch logfile_path
-  $logger = Logger.new File.open(logfile_path, File::WRONLY | File::APPEND)
+  $logger = Logger.new logfile_path, 'monthly'
 
   $logger.info "Starting aurora builder server in #{$env}..."
 
@@ -57,8 +56,6 @@ module AuroraBuilder
   $manager = AuroraBuilder::Manager.new
   $notifier = AuroraBuilder::Notifier.new
 
-  threads = [
-    $fetcher.thread
-  ]
-  threads.each(&:join)
+  $fetcher.thread.join
+
 end

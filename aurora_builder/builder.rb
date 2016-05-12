@@ -2,11 +2,8 @@ require 'fileutils'
 require 'open3'
 require 'securerandom'
 
-require_relative 'utilities'
-
 module AuroraBuilder
   class Builder
-    include Utilities
 
     def build job
       @job = job
@@ -33,11 +30,11 @@ module AuroraBuilder
 
       notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
     rescue => e
-      error_occur! e
+      notify 'error_occur', { progress_message: e }
     ensure
       # cleanup
-      FileUtils.rm_rf @building_workspace_path unless @building_workspace_path.blank?
-      FileUtils.rm_f archive_file_path unless archive_file_path.blank?
+      FileUtils.rm_rf @building_workspace_path unless @building_workspace_path.nil?
+      FileUtils.rm_f archive_file_path unless archive_file_path.nil?
     end
 
     private
@@ -142,9 +139,6 @@ module AuroraBuilder
     end
 
     def error_occur! error_message
-      # TODO get and send failed message
-      notify 'error_occur', { progress_message: error_message }
-
       raise "AuroraBuilder::BuildingFailed: #{error_message}"
     end
 

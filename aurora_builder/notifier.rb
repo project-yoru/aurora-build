@@ -25,7 +25,14 @@ module AuroraBuilder
         Thread.new do
           begin
             log 'Notifier thread started'
-            while notification = @notifications.pop do
+            loop do
+              unless notification = @notifications.pop
+                sleep 1
+                next
+              end
+
+              log "sending notification: #{notification}"
+
               conn = Faraday.new url: $secrets[:aurora_api_server][:url]
               response = conn.patch do |req|
                 req.url "/api/v1/jobs/#{notification[:job][:id]}/progress"
