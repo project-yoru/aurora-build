@@ -20,7 +20,7 @@ module AuroraBuilder
       @building_workspace_path = spawn_building_workspace
 
       notify 'pulling app content'
-      pull_app_content_repo @project[:github_repo_path]
+      pull_app_content_repo @project[:git_repo_path]
 
       notify 'running building scripts'
       run_building_scripts
@@ -49,8 +49,8 @@ module AuroraBuilder
       return building_workspace_path
     end
 
-    def pull_app_content_repo github_repo_path
-      pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, github_repo_path: github_repo_path }
+    def pull_app_content_repo git_repo_path
+      pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, git_repo_path: git_repo_path }
       exec_cmd pulling_cmd
     end
 
