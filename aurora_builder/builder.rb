@@ -16,16 +16,12 @@ module AuroraBuilder
       notify 'spawning building workspace'
       @building_workspace_path = spawn_building_workspace
 
-      notify 'pulling app content'
       pull_app_content_repo @project[:git_repo_path]
 
-      notify 'running building scripts'
       run_building_scripts
 
-      notify 'compressing'
       archive_file_path = compress
 
-      notify 'uploading'
       uploaded_archive_url = upload archive_file_path
 
       notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
@@ -47,6 +43,8 @@ module AuroraBuilder
     end
 
     def pull_app_content_repo git_repo_path
+      notify 'pulling app content...'
+
       pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, git_repo_path: git_repo_path }
       exec_cmd pulling_cmd
     end
@@ -54,7 +52,9 @@ module AuroraBuilder
     def run_building_scripts
       # TODO separate gulp scripts
       # TODO handle stderr and stuff
-      notify 'Running gulp script...'
+
+      notify 'Running building script...'
+
       building_cmd = $operating_cmds[:build] % { building_workspace_path: @building_workspace_path }
       exec_cmd building_cmd
     end
