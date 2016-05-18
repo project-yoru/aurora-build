@@ -9,6 +9,12 @@
     mv ./app_content/story ./app/ &&
     mv ./app_content/resources ./app/ &&
     rm -rf ./app_content
+  :parse_app_config_cson: |-
+    bash -lc "
+    source $NVM_DIR/nvm.sh &&
+    nvm use node &&
+    cd %{app_config_dir} &&
+    cson2json application.cson > application.json"
 
 :development:
   <<: *default
@@ -18,17 +24,23 @@
     nvm use node &&
     cd %{building_workspace_path} &&
     gulp build"
-  :build_android: |-
+  :init_cordova: |-
     bash -lc "
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
     cd %{building_workspace_path} &&
     cordova create cordova_workspace %{app_id} %{app_name} &&
     cd cordova_workspace &&
-    cordova platform add android &&
+    cordova platform add %{platform} &&
     rm -rf ./www &&
-    mv %{built_dist_path} ./www &&
-    cordova build android"
+    mv %{built_web_dist_path} ./www"
+  :build_via_cordova: |-
+    bash -lc "
+    source $NVM_DIR/nvm.sh &&
+    nvm use node &&
+    cd %{building_workspace_path} &&
+    cd cordova_workspace &&
+    cordova build %{platform}"
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r %{archive_file_path} ./*
@@ -40,15 +52,19 @@
     source $HOME/.rvm/scripts/rvm &&
     cd %{building_workspace_path} &&
     gulp build"
-  :build_android: |-
+  :init_cordova: |-
     bash -lc "
     cd %{building_workspace_path} &&
     cordova create cordova_workspace %{app_id} %{app_name} &&
     cd cordova_workspace &&
-    cordova platform add android &&
+    cordova platform add %{platform} &&
     rm -rf ./www &&
-    mv %{built_dist_path} ./www &&
-    cordova build android"
+    mv %{built_web_dist_path} ./www"
+  :build_via_cordova: |-
+    bash -lc "
+    cd %{building_workspace_path} &&
+    cd cordova_workspace &&
+    cordova build %{platform}"
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*

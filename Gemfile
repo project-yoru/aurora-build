@@ -2,13 +2,9 @@
 source 'https://ruby.taobao.org'
 
 gem 'trollop'
-# gem 'sidekiq'
-# gem 'sidekiq-symbols'
-# gem 'redis'
-# gem 'redis-namespace'
 gem 'faraday'
-# gem 'qiniu', '~> 6.2.1'
-# gem 'celluloid'
+gem 'qiniu', '~> 6.2.1'
+gem 'ox'
 
 group :development do
   gem 'byebug'

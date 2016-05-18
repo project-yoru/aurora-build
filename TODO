@@ -6,4 +6,5 @@ server:
 - SA bugsnag
 - should hide sensitive error message for user
 - IMPORTANT check if is a valid aurora app repo
-- SA proper logging for both goliath and grape
+- SA proper logging
+- check deps like cson

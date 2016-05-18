@@ -1,6 +1,8 @@
 require 'fileutils'
 require 'open3'
 require 'securerandom'
+require 'json'
+require 'ox'
 
 module AuroraBuilder
   class Builder
@@ -18,19 +20,22 @@ module AuroraBuilder
 
       pull_app_content_repo @project[:git_repo_path]
 
+      @config = parse_app_config
+
       case @distribution[:platform]
       when 'web'
         dist_path = build_web
         archive_file_path = compress
       when 'android'
         dist_path = build_web
-        archive_file_path = ( build_android dist_path, prod: :debug )
+        archive_file_path = ( build_android prod: :debug )
       end
 
       uploaded_archive_url = upload archive_file_path
 
       notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
     rescue => e
+      # TODO log e.backtrace
       notify 'error_occur', { progress_message: e }
     ensure
       # cleanup
@@ -48,34 +53,67 @@ module AuroraBuilder
     end
 
     def pull_app_content_repo git_repo_path
-      notify 'pulling app content...'
+      notify 'Pulling app content...'
 
       pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, git_repo_path: git_repo_path }
       exec_cmd pulling_cmd
     end
 
+    def parse_app_config
+      notify 'Parsing app config...'
+
+      app_config_dir = @building_workspace_path.join 'app/config/'
+
+      # parse application.json
+      if File.exist? (config_file_path = app_config_dir.join('application.json'))
+        return JSON.parse File.read config_file_path
+      end
+
+      # parse application.cson, cson -> json via cson2json
+      if File.exist? (config_file_path = app_config_dir.join('application.cson'))
+        parse_app_config_cson_cmd = $operating_cmds[:parse_app_config_cson] % {
+          app_config_dir: app_config_dir
+        }
+        exec_cmd parse_app_config_cson_cmd
+        parsed_config_file_path = app_config_dir.join 'application.json'
+        return JSON.parse File.read parsed_config_file_path
+      end
+
+      # TODO application.yml
+
+    end
+
     def build_web
+      # return built dist path
+
       # TODO separate gulp scripts
       # TODO handle stderr and stuff
 
       notify 'Building to web version...'
 
-      building_web_cmd = $operating_cmds[:build_web] % { building_workspace_path: @building_workspace_path }
+      building_web_cmd = $operating_cmds[:build_web] % {
+        building_workspace_path: @building_workspace_path
+      }
       exec_cmd building_web_cmd
       @building_workspace_path.join('dist')
     end
 
-    def build_android built_dist_path, prod: :debug
+    def build_android prod: :debug
       # return the apk file path
       # prod: :debug or :release
       # target: :device or :emulator
 
-      # TODO rename filename
+      notify 'Building android version...'
+      @cordova_workspace_path = init_cordova 'android'
 
-      notify 'Building to android version...'
+      configure_cordova
 
-      building_android_cmd = $operating_cmds[:build_android] % { building_workspace_path: @building_workspace_path, built_dist_path: built_dist_path, app_id: 'com.projectYoru.aurora.demo', app_name: 'AuroraDemo' }
-      exec_cmd building_android_cmd
+      notify 'Building via cordova...'
+      build_via_cordova_cmd = $operating_cmds[:build_via_cordova] % {
+        building_workspace_path: @building_workspace_path,
+        platform: 'android'
+      }
+      exec_cmd build_via_cordova_cmd
 
       filename = case prod
                  when :debug
@@ -84,13 +122,34 @@ module AuroraBuilder
                    'android.apk'
                  end
 
-      filepath = @building_workspace_path.join "cordova_workspace/platforms/android/build/outputs/apk/#{filename}"
+      filepath = @cordova_workspace_path.join "platforms/android/build/outputs/apk/#{filename}"
 
       new_filename = "#{SecureRandom.uuid}.apk"
-      new_filepath = @building_workspace_path.join "cordova_workspace/platforms/android/build/outputs/apk/#{new_filename}"
+      new_filepath = @cordova_workspace_path.join "platforms/android/build/outputs/apk/#{new_filename}"
 
       File.rename filepath, new_filepath
       new_filepath
+    end
+
+    def init_cordova platform
+      notify 'Initializing cordova...'
+      init_cordova_cmd = $operating_cmds[:init_cordova] % {
+        building_workspace_path: @building_workspace_path,
+        built_web_dist_path: @building_workspace_path.join('dist'),
+        app_id: @config['id'],
+        app_name: @config['name'],
+        platform: platform
+      }
+      exec_cmd init_cordova_cmd
+      @building_workspace_path.join 'cordova_workspace'
+    end
+
+    def configure_cordova
+      # fill config.xml for cordova with @config
+      notify 'Configuring cordova...'
+      config_xml = Ox.load File.read @cordova_workspace_path.join 'config.xml'
+
+      TODO
     end
 
     def compress

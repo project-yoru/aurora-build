@@ -1,3 +1,5 @@
+# TODO notification truncate max length limit
+
 require 'faraday'
 
 require_relative 'utilities'
