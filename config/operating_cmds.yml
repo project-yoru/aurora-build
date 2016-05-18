@@ -12,23 +12,43 @@
 
 :development:
   <<: *default
-  :build: |-
+  :build_web: |-
     bash -lc "
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
     cd %{building_workspace_path} &&
     gulp build"
+  :build_android: |-
+    bash -lc "
+    source $NVM_DIR/nvm.sh &&
+    nvm use node &&
+    cd %{building_workspace_path} &&
+    cordova create cordova_workspace %{app_id} %{app_name} &&
+    cd cordova_workspace &&
+    cordova platform add android &&
+    rm -rf ./www &&
+    mv %{built_dist_path} ./www &&
+    cordova build android"
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r %{archive_file_path} ./*
 
 :production:
   <<: *default
-  :build: |-
+  :build_web: |-
     bash -lc "
     source $HOME/.rvm/scripts/rvm &&
     cd %{building_workspace_path} &&
     gulp build"
+  :build_android: |-
+    bash -lc "
+    cd %{building_workspace_path} &&
+    cordova create cordova_workspace %{app_id} %{app_name} &&
+    cd cordova_workspace &&
+    cordova platform add android &&
+    rm -rf ./www &&
+    mv %{built_dist_path} ./www &&
+    cordova build android"
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*

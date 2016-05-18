@@ -7,8 +7,8 @@ module AuroraBuilder
 
     def build job
       @job = job
-      @distribution = @job[:distribution]
-      @project = @job[:project]
+      @project = @job[:project] # :id, :name, :git_repo_path
+      @distribution = @job[:distribution] # :id, :platform
 
       log "Starting building for job #{job[:id]}"
       notify 'start_building'
@@ -18,9 +18,14 @@ module AuroraBuilder
 
       pull_app_content_repo @project[:git_repo_path]
 
-      run_building_scripts
-
-      archive_file_path = compress
+      case @distribution[:platform]
+      when 'web'
+        dist_path = build_web
+        archive_file_path = compress
+      when 'android'
+        dist_path = build_web
+        archive_file_path = ( build_android dist_path, prod: :debug )
+      end
 
       uploaded_archive_url = upload archive_file_path
 
@@ -49,17 +54,48 @@ module AuroraBuilder
       exec_cmd pulling_cmd
     end
 
-    def run_building_scripts
+    def build_web
       # TODO separate gulp scripts
       # TODO handle stderr and stuff
 
-      notify 'Running building script...'
+      notify 'Building to web version...'
 
-      building_cmd = $operating_cmds[:build] % { building_workspace_path: @building_workspace_path }
-      exec_cmd building_cmd
+      building_web_cmd = $operating_cmds[:build_web] % { building_workspace_path: @building_workspace_path }
+      exec_cmd building_web_cmd
+      @building_workspace_path.join('dist')
+    end
+
+    def build_android built_dist_path, prod: :debug
+      # return the apk file path
+      # prod: :debug or :release
+      # target: :device or :emulator
+
+      # TODO rename filename
+
+      notify 'Building to android version...'
+
+      building_android_cmd = $operating_cmds[:build_android] % { building_workspace_path: @building_workspace_path, built_dist_path: built_dist_path, app_id: 'com.projectYoru.aurora.demo', app_name: 'AuroraDemo' }
+      exec_cmd building_android_cmd
+
+      filename = case prod
+                 when :debug
+                   'android-debug.apk'
+                 when :release
+                   'android.apk'
+                 end
+
+      filepath = @building_workspace_path.join "cordova_workspace/platforms/android/build/outputs/apk/#{filename}"
+
+      new_filename = "#{SecureRandom.uuid}.apk"
+      new_filepath = @building_workspace_path.join "cordova_workspace/platforms/android/build/outputs/apk/#{new_filename}"
+
+      File.rename filepath, new_filepath
+      new_filepath
     end
 
     def compress
+      # TODO dist_path as input
+
       notify 'Start compressing...'
 
       archive_file_path = $root_path.join("tmp/built_archives/#{SecureRandom.uuid}.zip") # TODO should be related to project name, distribution platform, version, etc...
