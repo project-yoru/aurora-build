@@ -3,9 +3,30 @@ require 'open3'
 require 'securerandom'
 require 'json'
 require 'ox'
+require 'hashie'
 
 module AuroraBuilder
   class Builder
+    DEFAULT_CONFIG = {
+      meta: {
+        id: 'com.projectyoru.workshopaurora.defaultappid',
+        name: 'WorkshopAuroraDefaultAppName',
+        version: '0.0.1',
+        description: 'Workshop Aurora default app description.',
+        author: {
+          name: 'Workshop Aurora',
+          email: 'fake@email.address',
+          link: 'https://github.com/project-yoru'
+        },
+        source: 'https://github.com/project-yoru/aurora-demo-app',
+        license: 'MIT'
+      },
+      appearance: {
+        orientation: 'landscape'
+        # TODO icon, logo
+      },
+      custom: {}
+    }.extend Hashie::Extensions::DeepMerge
 
     def build job
       @job = job
@@ -20,7 +41,7 @@ module AuroraBuilder
 
       pull_app_content_repo @project[:git_repo_path]
 
-      @config = parse_app_config
+      @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
 
       case @distribution[:platform]
       when 'web'
@@ -36,6 +57,13 @@ module AuroraBuilder
       notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
     rescue => e
       # TODO log e.backtrace
+
+      if $env == :development
+        puts e.backtrace
+        puts e
+        byebug
+      end
+
       notify 'error_occur', { progress_message: e }
     ensure
       # cleanup
@@ -60,6 +88,8 @@ module AuroraBuilder
     end
 
     def parse_app_config
+      # TODO valid required fields
+
       notify 'Parsing app config...'
 
       app_config_dir = @building_workspace_path.join 'app/config/'
@@ -136,8 +166,8 @@ module AuroraBuilder
       init_cordova_cmd = $operating_cmds[:init_cordova] % {
         building_workspace_path: @building_workspace_path,
         built_web_dist_path: @building_workspace_path.join('dist'),
-        app_id: @config['id'],
-        app_name: @config['name'],
+        app_id: @config['meta']['id'],
+        app_name: @config['meta']['name'],
         platform: platform
       }
       exec_cmd init_cordova_cmd
@@ -146,10 +176,28 @@ module AuroraBuilder
 
     def configure_cordova
       # fill config.xml for cordova with @config
-      notify 'Configuring cordova...'
-      config_xml = Ox.load File.read @cordova_workspace_path.join 'config.xml'
 
-      TODO
+      notify 'Configuring cordova...'
+
+      cordova_config_path = @cordova_workspace_path.join 'config.xml'
+
+      # load config xml
+      config = Ox.load File.read cordova_config_path
+
+      ## description
+      config.widget.description.replace_text @config['meta']['description']
+      ## author
+      config.widget.author.replace_text @config['meta']['author']['name']
+      config.widget.author[:email] = @config['meta']['author']['email']
+      config.widget.author[:href] = @config['meta']['author']['link']
+      ## preference orientation
+      preference_orientation = Ox::Element.new('preference')
+      preference_orientation[:name] = 'Orientation'
+      preference_orientation[:value] = @config['appearance']['orientation']
+      config.widget << ( preference_orientation )
+
+      # dump and write config.xml file
+      File.write cordova_config_path, ( Ox.dump config )
     end
 
     def compress

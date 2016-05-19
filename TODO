@@ -8,3 +8,6 @@ server:
 - IMPORTANT check if is a valid aurora app repo
 - SA proper logging
 - check deps like cson
+- provide some default config
+- valid required config fields
+- custom dns host for qiniu global server

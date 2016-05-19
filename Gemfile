@@ -5,6 +5,7 @@ gem 'trollop'
 gem 'faraday'
 gem 'qiniu', '~> 6.2.1'
 gem 'ox'
+gem 'hashie'
 
 group :development do
   gem 'byebug'
