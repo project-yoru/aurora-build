@@ -184,17 +184,27 @@ module AuroraBuilder
       # load config xml
       config = Ox.load File.read cordova_config_path
 
+      # meta
       ## description
       config.widget.description.replace_text @config['meta']['description']
       ## author
       config.widget.author.replace_text @config['meta']['author']['name']
       config.widget.author[:email] = @config['meta']['author']['email']
       config.widget.author[:href] = @config['meta']['author']['link']
+
+      #appearance
+      ## icon
+      # TODO to be fair, maybe should not put icon res in www
+      if icon_path = @config['appearance']['icon']
+        icon_conf = Ox::Element.new('icon')
+        icon_conf[:src] = "www/resources/images/#{icon_path}" # TODO SECURITY filter icon_path like ../../.../etc/secrets
+        config.widget << icon_conf
+      end
       ## preference orientation
       preference_orientation = Ox::Element.new('preference')
       preference_orientation[:name] = 'Orientation'
       preference_orientation[:value] = @config['appearance']['orientation']
-      config.widget << ( preference_orientation )
+      config.widget << preference_orientation
 
       # dump and write config.xml file
       File.write cordova_config_path, ( Ox.dump config )
@@ -234,6 +244,8 @@ module AuroraBuilder
     end
 
     def exec_cmd cmd
+      # TODO SECURITY user may easily construct args in cmds to execute danger codes
+
       log "Executing cmd: #{cmd}"
       stdout, stderr, status = Open3.capture3 cmd
 
@@ -245,8 +257,9 @@ module AuroraBuilder
         log "STDERR:"
         # TODO format
         log stderr
-        # TODO get and send failed message, try get the last line of formated stderr
-        # TODO
+
+        byebug if $env == :development
+
         error_occur! stderr.lines.last
         return
       end

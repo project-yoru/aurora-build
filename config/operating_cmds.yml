@@ -29,7 +29,7 @@
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
     cd %{building_workspace_path} &&
-    cordova create cordova_workspace %{app_id} %{app_name} &&
+    cordova create cordova_workspace %{app_id} \"%{app_name}\" &&
     cd cordova_workspace &&
     cordova platform add %{platform} &&
     rm -rf ./www &&
@@ -55,7 +55,7 @@
   :init_cordova: |-
     bash -lc "
     cd %{building_workspace_path} &&
-    cordova create cordova_workspace %{app_id} %{app_name} &&
+    cordova create cordova_workspace %{app_id} \"%{app_name}\" &&
     cd cordova_workspace &&
     cordova platform add %{platform} &&
     rm -rf ./www &&
