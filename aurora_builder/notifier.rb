@@ -43,6 +43,8 @@ module AuroraBuilder
                 req.body = notification.to_json
               end
 
+              log "got response: #{response.body}"
+
               # TODO handle errors
             end
           end

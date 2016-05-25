@@ -13,3 +13,5 @@ server:
 - custom dns host for qiniu global server
 - SECURITY filter icon_path like ../../.../etc/secrets
 - SECURITY user may easily construct args in cmds to execute danger codes
+- ROBUST error handle, builder reboot
+- OPTIMIZE redundant needless cloning

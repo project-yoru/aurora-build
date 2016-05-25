@@ -30,31 +30,51 @@ module AuroraBuilder
 
     def build job
       @job = job
-      @project = @job[:project] # :id, :name, :git_repo_path
-      @distribution = @job[:distribution] # :id, :platform
 
-      log "Starting building for job #{job[:id]}"
-      notify 'start_building'
+      case @job[:type]
+      when 'config'
+        @project = @job[:project] # :id, :name, :git_repo_path
 
-      notify 'spawning building workspace'
-      @building_workspace_path = spawn_building_workspace
+        log "Starting config job for job #{job[:id]}"
 
-      pull_app_content_repo @project[:git_repo_path]
+        @building_workspace_path = spawn_building_workspace
 
-      @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
+        pull_app_content_repo @project[:git_repo_path]
 
-      case @distribution[:platform]
-      when 'web'
-        dist_path = build_web
-        archive_file_path = compress
-      when 'android'
-        dist_path = build_web
-        archive_file_path = ( build_android prod: :debug )
+        # parse config
+        @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
+
+        notify 'succeed', { parsed_config: @config.to_json }
+      when 'build'
+        @project = @job[:project] # :id, :name, :git_repo_path
+        @distribution = @job[:distribution] # :id, :platform
+
+        log "Starting building for job #{job[:id]}"
+        notify 'start_building'
+
+        notify 'spawning building workspace'
+        @building_workspace_path = spawn_building_workspace
+
+        notify 'Pulling app content...'
+        pull_app_content_repo @project[:git_repo_path]
+
+        notify 'Parsing app config...'
+        @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
+
+        case @distribution[:platform]
+        when 'web'
+          dist_path = build_web
+          archive_file_path = compress
+        when 'android'
+          dist_path = build_web
+          archive_file_path = ( build_android prod: :debug )
+        end
+
+        uploaded_archive_url = upload archive_file_path
+
+        notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
       end
 
-      uploaded_archive_url = upload archive_file_path
-
-      notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
     rescue => e
       # TODO log e.backtrace
 
@@ -81,16 +101,12 @@ module AuroraBuilder
     end
 
     def pull_app_content_repo git_repo_path
-      notify 'Pulling app content...'
-
       pulling_cmd = $operating_cmds[:pull] % { building_workspace_path: @building_workspace_path, git_repo_path: git_repo_path }
       exec_cmd pulling_cmd
     end
 
     def parse_app_config
       # TODO valid required fields
-
-      notify 'Parsing app config...'
 
       app_config_dir = @building_workspace_path.join 'app/config/'
 
@@ -270,9 +286,6 @@ module AuroraBuilder
     def notify progress, extra_message = {}
       log "notifying: #{progress}, #{extra_message}"
 
-      default_message = {
-        sent_at: Time.now.to_i
-      }
       event_name = ''
       message = {}
 
@@ -290,7 +303,8 @@ module AuroraBuilder
       $notifier.notify({
         job: @job,
         event_name: event_name,
-        message: default_message.merge(message).merge(extra_message)
+        sent_at: Time.now.to_i,
+        message: message.merge(extra_message)
       })
     end
 
