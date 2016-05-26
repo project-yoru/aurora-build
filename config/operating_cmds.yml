@@ -9,15 +9,15 @@
     mv ./app_content/story ./app/ &&
     mv ./app_content/resources ./app/ &&
     rm -rf ./app_content
+
+:development:
+  <<: *default
   :parse_app_config_cson: |-
     bash -lc "
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
     cd %{app_config_dir} &&
     cson2json application.cson > application.json"
-
-:development:
-  <<: *default
   :build_web: |-
     bash -lc "
     source $NVM_DIR/nvm.sh &&
@@ -47,6 +47,10 @@
 
 :production:
   <<: *default
+  :parse_app_config_cson: |-
+    bash -lc "
+    cd %{app_config_dir} &&
+    cson2json application.cson > application.json"
   :build_web: |-
     bash -lc "
     source $HOME/.rvm/scripts/rvm &&
