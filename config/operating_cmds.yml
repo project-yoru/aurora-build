@@ -23,7 +23,7 @@
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
     cd %{building_workspace_path} &&
-    gulp build"
+    gulp build %{bundle_opt} %{online_opt}"
   :init_cordova: |-
     bash -lc "
     source $NVM_DIR/nvm.sh &&
@@ -55,7 +55,7 @@
     bash -lc "
     source $HOME/.rvm/scripts/rvm &&
     cd %{building_workspace_path} &&
-    gulp build --env prod --offline"
+    gulp build %{bundle_opt} %{online_opt}"
   :init_cordova: |-
     bash -lc "
     cd %{building_workspace_path} &&

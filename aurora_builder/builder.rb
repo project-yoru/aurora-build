@@ -63,10 +63,16 @@ module AuroraBuilder
 
         case @distribution[:platform]
         when 'web'
-          dist_path = build_web
+          bundle = ( $env == :production )
+          online = false
+
+          dist_path = build_web bundle: bundle, online: online
           archive_file_path = compress
         when 'android'
-          dist_path = build_web
+          bundle = $env == :production
+          online = false
+
+          dist_path = build_web bundle: bundle, online: online
           archive_file_path = ( build_android prod: :debug )
         end
 
@@ -129,16 +135,21 @@ module AuroraBuilder
 
     end
 
-    def build_web
+    def build_web bundle: false, online: false
       # return built dist path
 
       # TODO separate gulp scripts
       # TODO handle stderr and stuff
 
-      notify 'Building to web version...'
+      notify "Building to web version, bundle: #{bundle}, online: #{online}"
+
+      bundle_opt = bundle ? '--bundle' : ''
+      online_opt = online ? '--online' : ''
 
       building_web_cmd = $operating_cmds[:build_web] % {
-        building_workspace_path: @building_workspace_path
+        building_workspace_path: @building_workspace_path,
+        bundle_opt: bundle_opt,
+        online_opt: online_opt
       }
       exec_cmd building_web_cmd
       @building_workspace_path.join('dist')
