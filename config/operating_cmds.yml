@@ -55,7 +55,7 @@
     bash -lc "
     source $HOME/.rvm/scripts/rvm &&
     cd %{building_workspace_path} &&
-    gulp build --env prod"
+    gulp build --env prod --offline"
   :init_cordova: |-
     bash -lc "
     cd %{building_workspace_path} &&
