@@ -3,7 +3,7 @@ source 'https://ruby.taobao.org'
 
 gem 'trollop'
 gem 'faraday'
-gem 'qiniu', '~> 6.2.1'
+gem 'qiniu', '~> 6.7.0'
 gem 'ox'
 gem 'hashie'
 
