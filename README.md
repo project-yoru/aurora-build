@@ -2,5 +2,6 @@
 
 ## dependencies
 
-- cson
-- `blobxfer` for sync folder to azure blob
+- `npm cson`
+- `npm azure-cli`
+- `pip blobxfer` for sync folder to azure blob

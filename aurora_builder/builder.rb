@@ -45,6 +45,27 @@ module AuroraBuilder
         @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
 
         notify 'succeed', { parsed_config: @config.to_json }
+      when 'build_online_preview'
+        @project = @job[:project] # :id, :name, :git_repo_path
+        @distribution = @job[:distribution] # :id, :platform
+
+        log "Starting building for job #{job[:id]}"
+        notify 'start_building'
+
+        notify 'spawning building workspace'
+        @building_workspace_path = spawn_building_workspace
+
+        notify 'Pulling app content...'
+        pull_app_content_repo @project[:git_repo_path]
+
+        notify 'Parsing app config...'
+        @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
+
+        dist_path = build_web bundle: true, online: true
+
+        uploaded_online_preview_url = upload_online_preview dist_path
+
+        notify 'succeed', { uploaded_url: uploaded_online_preview_url }
       when 'build'
         @project = @job[:project] # :id, :name, :git_repo_path
         @distribution = @job[:distribution] # :id, :platform
@@ -270,28 +291,73 @@ module AuroraBuilder
       return uploaded_archive_url
     end
 
-    def exec_cmd cmd
+    def upload_online_preview built_web_path
+      # current only support azure
+
+      # generate online preview id (the container/bucket name)
+
+      # TODO
+      # handle if container exists, loop until generate an available one
+      # though uuid collision seems not gonna happen that easily...
+
+      online_preview_id = SecureRandom.uuid
+
+      # create container
+      # create_container_cmd = $operating_cmd[:storage][:create_container] % {
+      #   account_name: $secrets[:storage][:azure][:storage_account_name],
+      #   access_key: $secrets[:storage][:azure][:storage_access_key],
+      #   container_name: online_preview_id
+      # }
+      # exec_cmd create_container_cmd
+
+      # sync dist folder to 
+      sync_directory_to_container_cmd = $operating_cmds[:storage][:sync_directory] % {
+        account_name: $secrets[:storage][:azure][:account_name],
+        access_key: $secrets[:storage][:azure][:access_key],
+        container_name: online_preview_id,
+        local_path: built_web_path
+      }
+
+      exec_cmd sync_directory_to_container_cmd, 3
+
+      # TODO flexible
+      uploaded_online_preview_url = "https://auroraonlinepreviews.blob.core.windows.net/#{online_preview_id}/index.html"
+    end
+
+    def exec_cmd cmd, retry_times = 0
       # TODO SECURITY user may easily construct args in cmds to execute danger codes
 
-      log "Executing cmd: #{cmd}"
-      stdout, stderr, status = Open3.capture3 cmd
+      tried_times = 0
 
-      # log "STDOUT:"
-      # log stdout # TODO format
+      loop do
+        log "Executing cmd: #{cmd}"
+        stdout, stderr, status = Open3.capture3 cmd
 
-      if status.exitstatus != 0
-        log "Executing failed with exitstatus: #{status.exitstatus}"
-        log "STDERR:"
-        # TODO format
-        log stderr
+        tried_times += 1
 
-        byebug if $env == :development
+        if status.exitstatus == 0
+          log 'Executing exited with status 0, assuming succeed...'
+          return
+        else
+          log "Executing failed with exitstatus: #{status.exitstatus}"
+          log "STDERR:"
+          # TODO format
+          log stderr
 
-        error_occur! stderr.lines.last
-        return
+          if $env == :development
+            puts stderr
+            byebug
+          end
+
+          if tried_times >= retry_times
+            error_occur! stderr.lines.last
+            return
+          else
+            log "RETRYING for the #{tried_times} times..."
+            next
+          end
+        end
       end
-
-      log 'Executing exited with status 0, assuming succeed...'
     end
 
     def notify progress, extra_message = {}

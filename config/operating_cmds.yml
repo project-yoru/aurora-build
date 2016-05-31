@@ -1,5 +1,4 @@
-# TODO use env var for paths
-# TODO use default block
+# TODO merge cmds for dev and prod, add nvm prefix automatically
 
 :default: &default
   :pull: |-
@@ -44,6 +43,23 @@
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r %{archive_file_path} ./*
+  :storage:
+    # deprecated since blobxfer is able to create container while syncing
+    # :create_container: |-
+    #   bash -lc "
+    #   source $NVM_DIR/nvm.sh &&
+    #   nvm use node &&
+    #   azure storage container create --account-name %{account_name} --account-key %{access_key} %{container_name}"
+
+    # 1 sync (and create container) via blobxfer
+    # 2 set container access level via azure-cli
+    :sync_directory: |-
+      cd %{local_path} &&
+      blobxfer %{account_name} %{container_name} . --storageaccountkey %{access_key} --upload &&
+      bash -lc "
+      source $NVM_DIR/nvm.sh &&
+      nvm use node &&
+      azure storage container set --account-name %{account_name} --account-key %{access_key} --permission Blob %{container_name}"
 
 :production:
   <<: *default
@@ -72,3 +88,14 @@
   :compress: |-
     cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*
+  :storage:
+    # deprecated since blobxfer is able to create container while syncing
+    # :create_container: |-
+    #   azure storage container create --account-name %{account_name} --account-key %{access_key} %{container_name}
+
+    # 1 sync (and create container) via blobxfer
+    # 2 set container access level via azure-cli
+    :sync_directory: |-
+      cd %{local_path} &&
+      blobxfer %{account_name} %{container_name} . --storageaccountkey %{access_key} --upload &&
+      azure storage container set --account-name %{account_name} --account-key %{access_key} --permission Blob %{container_name}
