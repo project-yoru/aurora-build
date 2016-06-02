@@ -61,8 +61,12 @@ module AuroraBuilder
         notify 'Parsing app config...'
         @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
 
-        dist_path = build_web bundle: true, online: true
+        # TODO temporarily disabled bundling due to issues in core-structure
+        # https://github.com/project-yoru/aurora-core-structure/issues/17
+        # dist_path = build_web bundle: true, online: true
+        dist_path = build_web bundle: false, online: true
 
+        notify 'Uploading...'
         uploaded_online_preview_url = upload_online_preview dist_path
 
         notify 'succeed', { uploaded_url: uploaded_online_preview_url }
