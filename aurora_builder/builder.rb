@@ -64,7 +64,7 @@ module AuroraBuilder
         # TODO temporarily disabled bundling due to issues in core-structure
         # https://github.com/project-yoru/aurora-core-structure/issues/17
         # dist_path = build_web bundle: true, online: true
-        dist_path = build_web bundle: false, online: true
+        dist_path = build_web bundle: false, cdn: :polygit
 
         notify 'Uploading...'
         uploaded_online_preview_url = upload_online_preview dist_path
@@ -89,15 +89,15 @@ module AuroraBuilder
         case @distribution[:platform]
         when 'web'
           bundle = ( $env == :production )
-          online = false
+          cdn = nil
 
-          dist_path = build_web bundle: bundle, online: online
+          dist_path = build_web bundle: bundle, cdn: cdn
           archive_file_path = compress
         when 'android'
           bundle = $env == :production
-          online = false
+          cdn = nil
 
-          dist_path = build_web bundle: bundle, online: online
+          dist_path = build_web bundle: bundle, cdn: cdn
           archive_file_path = ( build_android prod: :debug )
         end
 
@@ -160,21 +160,21 @@ module AuroraBuilder
 
     end
 
-    def build_web bundle: false, online: false
+    def build_web bundle: false, cdn: nil
       # return built dist path
 
       # TODO separate gulp scripts
       # TODO handle stderr and stuff
 
-      notify "Building to web version, bundle: #{bundle}, online: #{online}"
+      notify "Building to web version, bundle: #{bundle}, cdn: #{cdn}"
 
       bundle_opt = bundle ? '--bundle' : ''
-      online_opt = online ? '--online' : ''
+      cdn_opt = cdn ? "--cdn #{cdn.to_s}" : ''
 
       building_web_cmd = $operating_cmds[:build_web] % {
         building_workspace_path: @building_workspace_path,
         bundle_opt: bundle_opt,
-        online_opt: online_opt
+        cdn_opt: cdn_opt
       }
       exec_cmd building_web_cmd
       @building_workspace_path.join('dist')
@@ -295,37 +295,39 @@ module AuroraBuilder
       return uploaded_archive_url
     end
 
-    def upload_online_preview built_web_path
-      # current only support azure
+    def upload_online_preview built_web_path, provider: :gcp
+      # provider: :azure, :gcp
 
       # generate online preview id (the container/bucket name)
 
-      # TODO
+      # TODO robust
       # handle if container exists, loop until generate an available one
       # though uuid collision seems not gonna happen that easily...
 
       online_preview_id = SecureRandom.uuid
 
-      # create container
-      # create_container_cmd = $operating_cmd[:storage][:create_container] % {
-      #   account_name: $secrets[:storage][:azure][:storage_account_name],
-      #   access_key: $secrets[:storage][:azure][:storage_access_key],
-      #   container_name: online_preview_id
-      # }
-      # exec_cmd create_container_cmd
-
-      # sync dist folder to 
-      sync_directory_to_container_cmd = $operating_cmds[:storage][:sync_directory] % {
-        account_name: $secrets[:storage][:azure][:account_name],
-        access_key: $secrets[:storage][:azure][:access_key],
-        container_name: online_preview_id,
-        local_path: built_web_path
-      }
-
-      exec_cmd sync_directory_to_container_cmd, 3
-
-      # TODO flexible
-      uploaded_online_preview_url = "https://auroraonlinepreviews.blob.core.windows.net/#{online_preview_id}/index.html"
+      case provider
+      when :gcp
+        bucket_name = "aurora-online-preview-#{online_preview_id}"
+        sync_directory_to_container_cmd = $operating_cmds[:storage][:sync_directory][:gcp] % {
+          bucket_name: bucket_name,
+          local_path: built_web_path
+        }
+        exec_cmd sync_directory_to_container_cmd, 3
+        # TODO flexible
+        return uploaded_online_preview_url = "https://#{bucket_name}.storage.googleapis.com/"
+      when :azure
+        # create bucket/container and sync dist directory
+        sync_directory_to_container_cmd = $operating_cmds[:storage][:sync_directory][:azure] % {
+          account_name: $secrets[:storage][:azure][:account_name],
+          access_key: $secrets[:storage][:azure][:access_key],
+          container_name: online_preview_id,
+          local_path: built_web_path
+        }
+        exec_cmd sync_directory_to_container_cmd, 3
+        # TODO flexible
+        return uploaded_online_preview_url = "https://auroraonlinepreviews.blob.core.windows.net/#{online_preview_id}/index.html"
+      end
     end
 
     def exec_cmd cmd, retry_times = 0

@@ -4,4 +4,5 @@
 
 - `npm cson`
 - `npm azure-cli`
-- `pip blobxfer` for sync folder to azure blob
+- # `pip blobxfer` for sync directory to azure blob
+- configured `gcloud` for sync directory to google cloud storage

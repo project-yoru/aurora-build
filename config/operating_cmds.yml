@@ -22,7 +22,7 @@
     source $NVM_DIR/nvm.sh &&
     nvm use node &&
     cd %{building_workspace_path} &&
-    gulp build %{bundle_opt} %{online_opt}"
+    gulp build %{bundle_opt} %{cdn_opt}"
   :init_cordova: |-
     bash -lc "
     source $NVM_DIR/nvm.sh &&
@@ -44,22 +44,34 @@
     cd %{building_workspace_path}/dist &&
     zip -r %{archive_file_path} ./*
   :storage:
-    # deprecated since blobxfer is able to create container while syncing
-    # :create_container: |-
-    #   bash -lc "
-    #   source $NVM_DIR/nvm.sh &&
-    #   nvm use node &&
-    #   azure storage container create --account-name %{account_name} --account-key %{access_key} %{container_name}"
+    # :create_bucket:
+    #   :azure: |-
+    #     deprecated since blobxfer is able to create container while syncing
+    #     :create_container: |-
+    #       bash -lc "
+    #       source $NVM_DIR/nvm.sh &&
+    #       nvm use node &&
+    #       azure storage container create --account-name %{account_name} --account-key %{access_key} %{container_name}"
 
-    # 1 sync (and create container) via blobxfer
-    # 2 set container access level via azure-cli
-    :sync_directory: |-
-      cd %{local_path} &&
-      blobxfer %{account_name} %{container_name} . --storageaccountkey %{access_key} --upload &&
-      bash -lc "
-      source $NVM_DIR/nvm.sh &&
-      nvm use node &&
-      azure storage container set --account-name %{account_name} --account-key %{access_key} --permission Blob %{container_name}"
+    :sync_directory:
+      # 1 sync (and create container) via blobxfer
+      # 2 set container access level via azure-cli
+      :azure: |-
+        cd %{local_path} &&
+        blobxfer %{account_name} %{container_name} . --storageaccountkey %{access_key} --upload &&
+        bash -lc "
+        source $NVM_DIR/nvm.sh &&
+        nvm use node &&
+        azure storage container set --account-name %{account_name} --account-key %{access_key} --permission Blob %{container_name}"
+      # 1 create bucket
+      # 2 set bucket default permission
+      # 3 sync
+      # 4 TODO set index.html
+      :gcp: |-
+        gsutil mb -c dra -l US -p project-yoru gs://%{bucket_name} &&
+        gsutil defacl set public-read gs://%{bucket_name} &&
+        gsutil -m rsync -c -r %{local_path} gs://%{bucket_name}
+
 
 :production:
   <<: *default
@@ -71,7 +83,7 @@
     bash -lc "
     source $HOME/.rvm/scripts/rvm &&
     cd %{building_workspace_path} &&
-    gulp build %{bundle_opt} %{online_opt}"
+    gulp build %{bundle_opt} %{cdn_opt}"
   :init_cordova: |-
     bash -lc "
     cd %{building_workspace_path} &&
@@ -89,13 +101,17 @@
     cd %{building_workspace_path}/dist &&
     zip -r -9 %{archive_file_path} ./*
   :storage:
-    # deprecated since blobxfer is able to create container while syncing
-    # :create_container: |-
-    #   azure storage container create --account-name %{account_name} --account-key %{access_key} %{container_name}
-
-    # 1 sync (and create container) via blobxfer
-    # 2 set container access level via azure-cli
-    :sync_directory: |-
-      cd %{local_path} &&
-      blobxfer %{account_name} %{container_name} . --storageaccountkey %{access_key} --upload &&
-      azure storage container set --account-name %{account_name} --account-key %{access_key} --permission Blob %{container_name}
+    :sync_directory:
+      # 1 sync (and create container) via blobxfer
+      # 2 set container access level via azure-cli
+      :azure: |-
+        cd %{local_path} &&
+        blobxfer %{account_name} %{container_name} . --storageaccountkey %{access_key} --upload &&
+        azure storage container set --account-name %{account_name} --account-key %{access_key} --permission Blob %{container_name}
+      # 1 create bucket
+      # 2 set bucket default permission
+      # 3 sync
+      :gcp: |-
+        gsutil mb -c dra -l US -p project-yoru gs://%{bucket_name} &&
+        gsutil defacl set public-read gs://%{bucket_name} &&
+        gsutil -m rsync -c -r %{local_path} gs://%{bucket_name}
