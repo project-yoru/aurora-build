@@ -45,31 +45,6 @@ module AuroraBuilder
         @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
 
         notify 'succeed', { parsed_config: @config.to_json }
-      when 'build_online_preview'
-        @project = @job[:project] # :id, :name, :git_repo_path
-        @distribution = @job[:distribution] # :id, :platform
-
-        log "Starting building for job #{job[:id]}"
-        notify 'start_building'
-
-        notify 'spawning building workspace'
-        @building_workspace_path = spawn_building_workspace
-
-        notify 'Pulling app content...'
-        pull_app_content_repo @project[:git_repo_path]
-
-        notify 'Parsing app config...'
-        @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
-
-        # TODO temporarily disabled bundling due to issues in core-structure
-        # https://github.com/project-yoru/aurora-core-structure/issues/17
-        # dist_path = build_web bundle: true, online: true
-        dist_path = build_web bundle: false, cdn: :polygit
-
-        notify 'Uploading...'
-        uploaded_online_preview_url = upload_online_preview dist_path
-
-        notify 'succeed', { uploaded_url: uploaded_online_preview_url }
       when 'build'
         @project = @job[:project] # :id, :name, :git_repo_path
         @distribution = @job[:distribution] # :id, :platform
@@ -87,23 +62,43 @@ module AuroraBuilder
         @config = DEFAULT_CONFIG.deep_merge( parse_app_config )
 
         case @distribution[:platform]
+        when 'online_preview'
+          # TODO temporarily disabled bundling due to issues in core-structure
+          # https://github.com/project-yoru/aurora-core-structure/issues/17
+          # also, bundling seems not that important if we got h2 supported
+
+          bundle = false
+          cdn = :polygit
+
+          dist_path = build_web bundle: bundle, cdn: cdn
+
+          notify 'Uploading...'
+          uploaded_online_preview_url = upload_online_preview dist_path
+
+          notify 'succeed', { uploaded_url: uploaded_online_preview_url }
         when 'web'
-          bundle = ( $env == :production )
+          bundle = $env == :production
           cdn = nil
 
           dist_path = build_web bundle: bundle, cdn: cdn
           archive_file_path = compress
+
+          notify 'Uploading...'
+          uploaded_archive_url = upload archive_file_path
+
+          notify 'succeed', { uploaded_url: uploaded_archive_url }
         when 'android'
           bundle = $env == :production
           cdn = nil
 
           dist_path = build_web bundle: bundle, cdn: cdn
           archive_file_path = ( build_android prod: :debug )
+
+          notify 'Uploading...'
+          uploaded_archive_url = upload archive_file_path
+
+          notify 'succeed', { uploaded_url: uploaded_archive_url }
         end
-
-        uploaded_archive_url = upload archive_file_path
-
-        notify 'succeed', { uploaded_archive_url: uploaded_archive_url }
       end
 
     rescue => e
@@ -276,8 +271,6 @@ module AuroraBuilder
     end
 
     def upload archive_file_path
-      notify "Start uploading file..."
-
       response_code, response_result, response_headers = Qiniu::Storage.upload_with_token_2(
         Qiniu::Auth.generate_uptoken( Qiniu::Auth::PutPolicy.new $secrets[:cdn][:qiniu][:bucket] ),
         archive_file_path
