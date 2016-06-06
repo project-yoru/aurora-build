@@ -65,13 +65,13 @@
         azure storage container set --account-name %{account_name} --account-key %{access_key} --permission Blob %{container_name}"
       # 1 create bucket
       # 2 set bucket default permission
-      # 3 sync
-      # 4 TODO set index.html
+      # 3 set index.html
+      # 4 sync
       :gcp: |-
         gsutil mb -c dra -l US -p project-yoru gs://%{bucket_name} &&
         gsutil defacl set public-read gs://%{bucket_name} &&
+        gsutil web set -m index.html gs://%{bucket_name}
         gsutil -m rsync -c -r %{local_path} gs://%{bucket_name}
-
 
 :production:
   <<: *default
@@ -114,4 +114,5 @@
       :gcp: |-
         gsutil mb -c dra -l US -p project-yoru gs://%{bucket_name} &&
         gsutil defacl set public-read gs://%{bucket_name} &&
+        gsutil web set -m index.html gs://%{bucket_name}
         gsutil -m rsync -c -r %{local_path} gs://%{bucket_name}
