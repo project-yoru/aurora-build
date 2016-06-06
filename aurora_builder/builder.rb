@@ -308,7 +308,10 @@ module AuroraBuilder
         }
         exec_cmd sync_directory_to_container_cmd, 3
         # TODO flexible
-        return uploaded_online_preview_url = "https://#{bucket_name}.storage.googleapis.com/"
+        # COMMENT about using index.html, as said in google cloud docs, 
+        # the main page is only served when a bucket listing request is made via the CNAME alias
+        # https://cloud.google.com/storage/docs/gsutil/commands/web#description
+        return uploaded_online_preview_url = "https://#{bucket_name}.storage.googleapis.com/index.html"
       when :azure
         # create bucket/container and sync dist directory
         sync_directory_to_container_cmd = $operating_cmds[:storage][:sync_directory][:azure] % {
