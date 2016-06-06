@@ -75,9 +75,6 @@ module AuroraBuilder
           notify 'Uploading...'
           uploaded_online_preview_url = upload_online_preview dist_path
 
-          set_bucket_index = 
-          gsutil web set -m index.html -e 404.html gs://www.example.com
-
           notify 'succeed', { uploaded_url: uploaded_online_preview_url }
         when 'web'
           bundle = $env == :production
