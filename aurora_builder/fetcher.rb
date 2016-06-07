@@ -30,6 +30,9 @@ module AuroraBuilder
       response = conn.delete '/api/v1/jobs/to_build/pop'
       job = JSON.parse response.body, symbolize_names: true
       job == {} ? nil : job
+    rescue
+      AuroraBuilder::Utilities.log 'Fetching failed.'
+      return nil
     end
   end
 end

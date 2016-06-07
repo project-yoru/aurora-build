@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 # stop server
-# TODO
+kill -9 `cat ./tmp/pids/server.pid`

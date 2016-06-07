@@ -2,10 +2,11 @@
 
 # TODO support options for pid, log, daemon
 
-require 'trollop'
 require 'logger'
 require 'pathname'
 require 'fileutils'
+require 'trollop'
+require 'pidfile'
 
 module AuroraBuilder
   $root_path = Pathname.new __dir__
@@ -26,6 +27,9 @@ module AuroraBuilder
   $logger = Logger.new logfile_path, 'monthly'
 
   $logger.info "Starting aurora builder server in #{$env}..."
+
+  # pids
+  PidFile.new piddir: 'tmp/pids', pidfile: 'server.pid'
 
   # load libs
   $logger.info 'Loading libs...'
