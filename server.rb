@@ -23,12 +23,14 @@ module AuroraBuilder
     end
 
   # logger
+  Pathname.mkpath 'log'
   logfile_path = $root_path.join "log/#{$env.to_s}.log"
   $logger = Logger.new logfile_path, 'monthly'
 
   $logger.info "Starting aurora builder server in #{$env}..."
 
   # pids
+  Pathname.mkpath 'tmp/pids'
   PidFile.new piddir: 'tmp/pids', pidfile: 'server.pid'
 
   # load libs

@@ -1,10 +1,7 @@
+/log
+/tmp
+
 config/secrets.yml
-
-/log/*
-!/log/.keep
-
-/tmp/*
-!/tmp/.keep
 
 .byebug_history
 
